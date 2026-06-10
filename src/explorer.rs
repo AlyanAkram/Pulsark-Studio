@@ -79,19 +79,4 @@ impl Explorer {
         });
     }
 
-    pub fn create_file(path: &PathBuf) {
-        let _ = std::fs::write(path.join("new_file.txt"), "");
-    }
-
-    pub fn create_folder(path: &PathBuf) {
-        let _ = std::fs::create_dir(path.join("new_folder"));
-    }
-
-    pub fn delete_path(path: &PathBuf) {
-        if path.is_dir() {
-            let _ = std::fs::remove_dir_all(path);
-        } else {
-            let _ = std::fs::remove_file(path);
-        }
-    }
 }
