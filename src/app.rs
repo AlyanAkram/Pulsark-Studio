@@ -8,6 +8,9 @@ use crate::file_tree::FileNode;
 use crate::explorer::Explorer;
 use crate::editor::Editor;
 
+use crate::highlighter::Highlighter;
+use crate::highlight_cache::HighlightCache;
+
 pub struct MyApp {
     pub sidebar_width: f32,
     pub right_panel_width: f32,
@@ -23,6 +26,9 @@ pub struct MyApp {
 
     pub current_dir: Option<PathBuf>,
     pub file_tree: Vec<FileNode>,
+
+    pub highlighter: Highlighter,
+    pub highlight_cache: HighlightCache,
 }
 
 impl Default for MyApp {
@@ -42,6 +48,9 @@ impl Default for MyApp {
 
             current_dir: None,
             file_tree: vec![],
+
+            highlighter: Highlighter::new(),
+            highlight_cache: HighlightCache::new(),
         }
     }
 }
@@ -184,6 +193,8 @@ impl eframe::App for MyApp {
                 ui,
                 &self.active_file,
                 &mut self.file_contents,
+                &self.highlighter,
+                &mut self.highlight_cache,
             );
         });
     }

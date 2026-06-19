@@ -4,6 +4,8 @@ mod explorer;
 mod editor;
 mod terminal;
 mod ai_panel;
+mod highlighter;
+mod highlight_cache;
 
 fn main() -> eframe::Result<()> {
     let options = eframe::NativeOptions {
