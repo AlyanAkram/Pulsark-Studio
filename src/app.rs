@@ -7,6 +7,7 @@ use crate::file_tree::FileNode;
 
 use crate::explorer::Explorer;
 use crate::editor::Editor;
+use crate::find::{FindPanel, FindState};   // ← new module
 
 use crate::highlighter::Highlighter;
 use crate::highlight_cache::HighlightCache;
@@ -29,6 +30,8 @@ pub struct MyApp {
 
     pub highlighter: Highlighter,
     pub highlight_cache: HighlightCache,
+
+    pub find: FindState,
 }
 
 impl Default for MyApp {
@@ -51,6 +54,8 @@ impl Default for MyApp {
 
             highlighter: Highlighter::new(),
             highlight_cache: HighlightCache::new(),
+
+            find: FindState::default(),
         }
     }
 }
@@ -58,44 +63,51 @@ impl Default for MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
 
+        // =========================
+        // GLOBAL KEYBINDS
+        // =========================
+        if ctx.input(|i| i.modifiers.ctrl && i.key_pressed(egui::Key::F)) {
+            if self.find.visible {
+                // Ctrl+F while open → close and clear
+                self.find.close();
+            } else {
+                self.find.open();
+            }
+        }
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) && self.find.visible {
+            self.find.close();
+        }
+
+        // =========================
+        // MENU BAR
+        // =========================
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
-
             ui.horizontal(|ui| {
-
                 ui.menu_button("View", |ui| {
-
                     if ui.checkbox(&mut self.show_explorer, "Explorer").clicked() {
                         ui.close_menu();
                     }
-
                     if ui.checkbox(&mut self.show_ai, "AI Panel").clicked() {
                         ui.close_menu();
                     }
-
                     if ui.checkbox(&mut self.show_terminal, "Terminal").clicked() {
                         ui.close_menu();
                     }
-
                 });
-
             });
-
         });
 
         // =========================
         // LEFT SIDEBAR (EXPLORER)
         // =========================
         if self.show_explorer {
-
             egui::SidePanel::left("sidebar")
                 .resizable(true)
                 .default_width(self.sidebar_width)
                 .show(ctx, |ui| {
-
                     ui.heading("📁 Explorer");
                     ui.separator();
 
-                    // Open folder
                     if ui.button("Open Folder").clicked() {
                         if let Some(folder) = rfd::FileDialog::new().pick_folder() {
                             self.current_dir = Some(folder.clone());
@@ -134,7 +146,6 @@ impl eframe::App for MyApp {
         // RIGHT PANEL (AI)
         // =========================
         if self.show_ai {
-
             egui::SidePanel::right("ai_panel")
                 .resizable(true)
                 .default_width(self.right_panel_width)
@@ -142,14 +153,13 @@ impl eframe::App for MyApp {
                     ui.heading("🤖 AI");
                     ui.separator();
                     ui.label("AI panel coming soon...");
-            });
+                });
         }
 
         // =========================
         // BOTTOM PANEL (TERMINAL)
         // =========================
         if self.show_terminal {
-
             egui::TopBottomPanel::bottom("terminal")
                 .resizable(true)
                 .default_height(self.bottom_panel_height)
@@ -157,17 +167,14 @@ impl eframe::App for MyApp {
                     ui.heading("🖥 Terminal");
                     ui.separator();
                     ui.label("Terminal coming soon...");
-            });
+                });
         }
 
         // =========================
         // CENTRAL EDITOR
         // =========================
         egui::CentralPanel::default().show(ctx, |ui| {
-
             ui.horizontal(|ui| {
-                ui.heading("Editor");
-                
                 if ui.button("💾 Save").clicked() {
                     if let Some(file) = &self.active_file {
                         if let Some(content) = self.file_contents.get(file) {
@@ -177,6 +184,8 @@ impl eframe::App for MyApp {
                 }
             });
 
+            ui.separator();
+            ui.heading("Editor");
             ui.separator();
 
             Editor::draw_tabs(
@@ -188,12 +197,35 @@ impl eframe::App for MyApp {
 
             ui.separator();
 
+            // Capture the editor area rect so FindPanel can anchor itself.
+            let editor_rect = ui.available_rect_before_wrap();
+
+            // Extract all find values before the call so Rust doesn't see
+            // simultaneous immutable (active_query) + mutable (take_scroll) borrows.
+            let find_query   = self.find.active_query().to_string();
+            let find_current = self.find.current_match;
+            let find_scroll  = self.find.take_scroll();
+
             Editor::draw_editor(
                 ui,
                 &self.active_file,
                 &mut self.file_contents,
                 &self.highlighter,
                 &mut self.highlight_cache,
+                &find_query,
+                find_current,
+                find_scroll,
+            );
+
+            // =========================
+            // FIND OVERLAY
+            // =========================
+            FindPanel::show(
+                ctx,
+                &mut self.find,
+                editor_rect,
+                &self.file_contents,
+                &self.active_file,
             );
         });
     }

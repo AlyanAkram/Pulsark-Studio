@@ -2,6 +2,7 @@ mod app;
 mod file_tree;
 mod explorer;
 mod editor;
+mod find;
 mod terminal;
 mod ai_panel;
 mod highlighter;
