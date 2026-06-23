@@ -166,6 +166,8 @@ impl eframe::App for MyApp {
         egui::CentralPanel::default().show(ctx, |ui| {
 
             ui.horizontal(|ui| {
+                ui.heading("Editor");
+                
                 if ui.button("💾 Save").clicked() {
                     if let Some(file) = &self.active_file {
                         if let Some(content) = self.file_contents.get(file) {
@@ -175,9 +177,6 @@ impl eframe::App for MyApp {
                 }
             });
 
-            ui.separator();
-
-            ui.heading("Editor");
             ui.separator();
 
             Editor::draw_tabs(
